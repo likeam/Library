@@ -1,5 +1,5 @@
 class ErrorHandler extends Error {
-  constructor(statusCode, message) {
+  constructor( message, statusCode) {
     super(message);
     this.statusCode = statusCode;
   }
@@ -26,11 +26,11 @@ export const errorMiddleware = (err, req, res, next) => {
     const message = `Token has expired. Please try again`;
     err = new ErrorHandler(message, statusCode);
   }
-  // if (err.name === `CastError`) {
-  //   const statusCode = 400;
-  //   const message = `Resource not found. Invalid: ${err.path}`;
-  //   err = new ErrorHandler(message, statusCode);
-  // }
+  if (err.name === `CastError`) {
+    const statusCode = 400;
+    const message = `Resource not found. Invalid: ${err.path}`;
+    err = new ErrorHandler(message, statusCode);
+  }
 
   const errorMessage = err.errors
     ? Object.values(err.errors)

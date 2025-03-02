@@ -58,8 +58,9 @@ export const register = catchAsyncErrors(async (req, res, next) => {
 
 export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
   const { email, otp } = req.body;
+
   if (!email || !otp) {
-    return next(new ErrorHandler("Please enter all fields"));
+    return next(new ErrorHandler("Please enter all fields", 400));
   }
 
   try {
@@ -69,7 +70,7 @@ export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
     }).sort({ createdAt: -1 });
 
     if (!userAllEntreis) {
-      return next(new ErrorHandler("Invalid OTP", 404));
+      return next(new ErrorHandler("Usernot found", 404));
     }
     let user;
     if (userAllEntreis.length > 1) {
@@ -92,7 +93,7 @@ export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
       user.varificationCodeExpires
     ).getTime();
 
-    if (verificationCodeExpire < currentTime) {
+    if (currentTime > verificationCodeExpire) {
       return next(new ErrorHandler("OTP has expired", 400));
     }
     user.accountVerified = true;
@@ -101,6 +102,26 @@ export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
       await user.save({ validateModifiedOnly: true });
     sendToken(user, 200, "Account Verified", res);
   } catch (error) {
-    return next(new ErrorHandler("Invalid OTP", 400));
+    return next(new ErrorHandler("Internal Server Error", 500));
   }
+});
+
+export const login = catchAsyncErrors(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return next(new ErrorHandler("Please enter all fields", 400));
+  }
+
+  const user = await User.findOne({email, accountVerified: true}).select("+password");
+  if (!user) {
+    return next(new ErrorHandler("Invalid Email or Password", 401));
+  }
+
+  const isPasswordMatched = await bcrypt.compare(password, user.password);
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Invalid  Password", 401));
+  }
+  sendToken(user, 200, "Login Successful", res);
+
 });

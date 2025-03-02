@@ -1,5 +1,5 @@
 export const sendToken = (user, statusCode, message, res) => {
-  const token = user.geenerateToken();
+  const token = user.generateToken();
 
   res
     .status(statusCode)
